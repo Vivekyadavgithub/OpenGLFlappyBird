@@ -10,7 +10,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-void processInput(GLFWwindow* window);
 
 int main()
 {
@@ -21,11 +20,12 @@ int main()
 		"uniform mat4 scale;\n"
 		"uniform mat4 goup;\n"
 		"uniform mat4 model;\n"
+		"uniform mat4 view;\n"
 		"out vec2 TexCoord;\n"
 		"void main()\n"
 		"{\n"
 		//"		if(model == mat4(0.0f)) goup * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-		"		gl_Position = model * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+		"		gl_Position = view * model * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 		"		TexCoord = vec2(aTexCoord.x, 1 - aTexCoord.y);\n"
 		//"ourColor = aColor;\n"
 		"}\0";
@@ -87,7 +87,7 @@ int main()
 		glm::vec3( 2.0f,  0.0f,  0.0f),
 		glm::vec3( 2.0f,  1.8f,  0.0f),
 		glm::vec3( 3.0f,  0.0f,  0.0f),
-		glm::vec3( 3.0f,  1.8f,  0.0f),
+		glm::vec3( 3.0f,  1.8f,  0.0f)
 		//glm::vec3( 0.5f,  0.2f,  0.0f),
 		//glm::vec3( 0.3f,  0.0f,  0.0f)
 	};
@@ -145,24 +145,40 @@ int main()
 	glUseProgram(shader);
 	glValidateProgram(shader);
 	glm::vec3 gravity(0.0f, 0.0f, 0.0f);
+	float x_Cor = 0.0f;
 	while (!glfwWindowShouldClose(window)) {
+		
 		glClear(GL_COLOR_BUFFER_BIT);
 		float up_val = 0;
 		float down_val = 0.02f;
 		gravity.y -= 0.02f;
-		//gravity.x += 0.001f;
+	    gravity.x += 0.003f;
+		//std::cout << gravity.y << "\n";
+		glm::mat4 view = glm::mat4(1.0f);
+		
+		view = glm::translate(view, glm::vec3(x_Cor, 0.0f, 0.0f));
+		x_Cor -= 0.003f;
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) up_val += 0.07f;
+		std::cout << gravity.y << "\n";
+		if ((gravity.x - (int)gravity.x) > 0.3f && (gravity.x - (int)gravity.x) < 0.8f) {
+			if (gravity.y < 1.1f && gravity.y > 0.45f) {
+				std::cout << "good to go\n";
+			}
+			else break;
+		}
 		glm::mat4 model = glm::mat4(1.0f);
 		//gravity.x = 0.001f;
 		gravity.y += up_val;
 		model = glm::translate(model, gravity);
-		if (gravity.y > 1.3f || gravity.y < -1.3f) std::cout << "game ended\n";
+		//if (gravity.y > 1.3f || gravity.y < -1.3f) std::cout << "game ended\n";
 		unsigned int texloc = glGetUniformLocation(shader, "texture2");
 		unsigned int pos    = glGetUniformLocation(shader, "model");
+		unsigned int view_mat = glGetUniformLocation(shader, "view");
 		glActiveTexture(GL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, texture[0]);
 		glUniform1i(texloc, 0);
 		glUniformMatrix4fv(pos, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(view_mat, 1, GL_FALSE, glm::value_ptr(view));
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glActiveTexture(GL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, texture[1]);
@@ -179,9 +195,9 @@ int main()
 			glUniformMatrix4fv(pos, 1, GL_FALSE, glm::value_ptr(model));
 
 			glDrawArrays(GL_TRIANGLES, 6, 12);
-			cubePositions[i].x -= 0.003f;
+			//cubePositions[i].x -= 0.003f;
 			model = glm::mat4(1.0f);
-			if (cubePositions[i].x < -1.5) cubePositions[i].x += 4;
+			if (gravity.x - cubePositions[i].x > 2.0f) cubePositions[i].x += 4;
 			
 		}
 		glfwSwapBuffers(window);
